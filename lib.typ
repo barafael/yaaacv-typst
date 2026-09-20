@@ -1,5 +1,5 @@
 // ============================================================================
-// yaaacv — Yet Another Awesome CV
+// yaaacv — Yet Another Also Awesome CV
 //
 // A Typst port of the `yaac-another-awesome-cv` LaTeX class
 // (c) Christophe Roger, LPPL 1.3c.  All spacing values are derived from the
