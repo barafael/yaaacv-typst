@@ -383,6 +383,9 @@
 /// - start-date: shown bold above the body; `none` to omit
 /// - body: description; `- item` lines become angle-right bullets
 /// - tags: array of tag strings
+/// - date-column: width of the date column (condensed layouts use less)
+/// - inset-x / inset-y: cell padding around the date/content columns
+/// - gap: vertical space after the entry
 ///
 /// #example ```typst
 /// #yaaacv.experience(
@@ -393,7 +396,19 @@
 ///   ("tag", "tag"),
 /// )
 /// ```
-#let experience(end-date, title-text, org-link, location, start-date, body, tags) = {
+#let experience(
+  end-date,
+  title-text,
+  org-link,
+  location,
+  start-date,
+  body,
+  tags,
+  date-column: left-column,
+  inset-x: 6pt,
+  inset-y: 6.5pt,
+  gap: 0.9em,
+) = {
   let org-part = if org-link == none { [] } else { [, #smallcaps(org-link)] }
   let loc-part = if location == none { [] } else { [, #location] }
   let title-line = [#title-text#org-part#loc-part]
@@ -403,12 +418,12 @@
       // LaTeX: leftcolumn=2.5cm is the *content* width; tabcolsep (6pt) is
       // added on each side OUTSIDE it.  Typst insets eat INTO the column
       // width, so we widen by 2×6pt to keep the vline at the correct position.
-      columns: (left-column + 12pt, 1fr),
+      columns: (date-column + 2 * inset-x, 1fr),
       column-gutter: 0pt,
       row-gutter: 0pt,
       stroke: none,
       align: (right + top, left + top),
-      inset: (x: 6pt, y: 6.5pt),
+      inset: (x: inset-x, y: inset-y),
       table.cell(stroke: (right: vstroke))[#strong(end-date)],
       strong(title-line),
       table.cell(stroke: (right: vstroke))[#if start-date != none { strong(start-date) } else { [] }],
@@ -420,7 +435,7 @@
       tag-row(tags),
     )
   ]
-  v(0.9em)
+  v(gap)
 }
 
 /// Small vertical space between consecutive experience entries.
@@ -432,15 +447,18 @@
 // ---------------------------------------------------------------------------
 
 /// One education entry (bold date in the left column, content to the right).
-#let scholarship-entry(date, content) = {
+///
+/// - date-column / gutter: column width and gap (condensed layouts use less)
+/// - gap: vertical space after the entry
+#let scholarship-entry(date, content, date-column: left-column, gutter: 1em, gap: 0.4em) = {
   grid(
-    columns: (left-column, 1fr),
-    column-gutter: 1em,
+    columns: (date-column, 1fr),
+    column-gutter: gutter,
     align: (right + top, left + top),
     text(weight: 400, date),
     content,
   )
-  v(0.4em)
+  v(gap)
 }
 
 /// A list of `scholarship-entry` rows, e.g. under an "Education" heading.
@@ -460,6 +478,7 @@
 /// - links: optional content row (often `website(...)`); omit or pass `none`
 /// - visible: set to `false` to hide this project entirely (handy for
 ///   tailoring a CV per application without deleting content)
+/// - gap: vertical space after the entry
 ///
 /// #example ```typst
 /// #yaaacv.project(
@@ -469,7 +488,7 @@
 ///   ("tag", "tag"),
 /// )
 /// ```
-#let project(name, dates, desc, tags, links: none, visible: true) = if visible {
+#let project(name, dates, desc, tags, links: none, visible: true, gap: 1.8em) = if visible {
   block(width: 100% - 1.5em, breakable: false)[
     #grid(
       columns: (1fr, auto),
@@ -489,7 +508,7 @@
     #v(2pt)
     #tag-row(tags)
   ]
-  v(1.8em)
+  v(gap)
 }
 
 // ---------------------------------------------------------------------------
@@ -548,4 +567,195 @@
   set par(leading: body-leading, justify: false, spacing: 1em)
 
   body
+}
+
+// ===========================================================================
+// Condensed two-column layout (experimental).
+//
+// A much tighter variant: a narrow sidebar (contact, skills, languages, …)
+// next to a wide main column (experience, education, projects).  Reuses the
+// regular building blocks; section headings and skill rows have compact
+// counterparts, and the entry functions take spacing parameters.
+// ===========================================================================
+
+/// Compact section heading for the condensed layout: icon, small-caps title,
+/// rule — like `section-title`, but sized for narrow columns.
+///
+/// #example ```typst
+/// #yaaacv.condensed-section-title[Experience][#yaaacv.fa-suitcase]
+/// ```
+#let condensed-section-title(title, icon) = {
+  v(0.7em)
+  block(
+    width: 100%,
+    inset: (bottom: 3pt, top: 0pt),
+    stroke: (bottom: (paint: black, thickness: 0.4pt)),
+    text(size: 11pt, fill: accent-color)[
+      #fa-icon(icon)
+      #h(0.5em)
+      #smallcaps(title)
+    ],
+  )
+  v(4pt)
+}
+
+/// The condensed sidebar header: circular photo, name, tagline, and one
+/// contact row per detail.  Takes the same author dictionary as `cvheader`
+/// (all keys optional; `none` omits the row).
+#let condensed-header(author) = {
+  // All keys except firstname/lastname are optional.
+  let author = (
+    photo: none,
+    tagline: none,
+    linkedin: none,
+    github: none,
+    "github-pages": none,
+    phone: none,
+    email: none,
+    address: none,
+    info: none,
+  ) + author
+  let rows = ()
+  if author.photo != none {
+    rows.push(align(center, idphoto(author.photo)))
+  }
+  rows.push(text(size: 15pt, fill: accent-color, weight: 300, author.firstname))
+  rows.push(text(
+    size: 15pt,
+    fill: accent-color,
+    weight: 400,
+    smallcaps(author.lastname),
+  ))
+  if author.tagline != none {
+    rows.push(text(size: 9.5pt, fill: accent-color, author.tagline))
+  }
+  grid(columns: 1, row-gutter: 0.45em, align: left + horizon, ..rows)
+
+  // Contact rows, mirroring cvheader's link construction with compact
+  // labels that fit a narrow column.
+  let contact = ()
+  if author.linkedin != none {
+    contact.push((fa-linkedin, link(
+      "http://www.linkedin.com/in/" + author.linkedin,
+      text(fill: link-color, "in/" + author.linkedin),
+    )))
+  }
+  if author.github != none {
+    contact.push((fa-github, link(
+      "http://www.github.com/" + author.github,
+      text(fill: link-color, author.github),
+    )))
+  }
+  if author.github-pages != none {
+    contact.push((fa-github, link(
+      "https://" + author.github-pages + ".github.io",
+      text(fill: link-color, author.github-pages + ".github.io"),
+    )))
+  }
+  if author.phone != none { contact.push((fa-mobile, author.phone)) }
+  if author.email != none {
+    contact.push((fa-at, link(
+      "mailto:" + author.email,
+      text(fill: symbol-color, author.email),
+    )))
+  }
+  if author.address != none { contact.push((fa-map-marker, author.address)) }
+  if author.info != none { contact.push((fa-info, author.info)) }
+
+  v(0.7em)
+  grid(
+    columns: (auto, 1fr),
+    column-gutter: 0.55em,
+    row-gutter: 0.45em,
+    align: (left + horizon, left + horizon),
+    ..contact.map(((icon, body)) => (fa-icon(icon), body)).flatten(),
+  )
+}
+
+/// One skill row for the condensed layout: name on the left, the 6-level dot
+/// row flush right on the same line.
+#let condensed-skill(name, level) = {
+  let dots = for i in range(1, 7) {
+    if i > level {
+      text(size: 0.8em, fill: accent-dots, fa-circle-o)
+    } else {
+      text(size: 0.8em, fill: accent-dots, fa-circle)
+    }
+    h(0.2em)
+  }
+  grid(
+    columns: (1fr, auto),
+    column-gutter: 0.5em,
+    align: (left + horizon, right + horizon),
+    text(weight: 400, name),
+    dots,
+  )
+}
+
+/// A list of `condensed-skill` rows.
+///
+/// #example ```typst
+/// #yaaacv.condensed-skills(
+///   yaaacv.condensed-skill("German", 6),
+///   yaaacv.condensed-skill("English", 5),
+/// )
+/// ```
+#let condensed-skills(..items) = grid(columns: 1, row-gutter: 0.55em, ..items)
+
+/// The condensed document entry point: tighter page, type, and paragraph
+/// setup, then `sidebar` and body side by side.  Use
+/// `condensed-section-title`, `condensed-header`, and `condensed-skill`
+/// inside; the regular `experience`, `scholarship`, `project`, `keywords`,
+/// and `tag-row` work as-is (with their spacing parameters tightened).
+///
+/// - sidebar: content of the left column (recommended: `condensed-header`
+///   plus compact sections)
+/// - sidebar-width: width of the left column
+/// - language: document language code (e.g. `"en"`, `"de"`)
+///
+/// #example ```typst
+/// #cv-condensed(
+///   sidebar: [
+///     #condensed-header((firstname: [Jane], lastname: [Doe], /* … */))
+///     #condensed-section-title[Skills][#fa-tasks]
+///     …
+///   ],
+/// )[
+///   #condensed-section-title[Experience][#fa-suitcase]
+///   …
+/// ]
+/// ```
+#let cv-condensed(
+  body,
+  sidebar: none,
+  sidebar-width: 5.4cm,
+  language: "en",
+) = {
+  set page(
+    paper: "a4",
+    margin: (left: 1.3cm, right: 1.3cm, top: 1.3cm, bottom: 1.3cm),
+  )
+  set text(
+    font: "Source Sans Pro",
+    weight: 300,
+    size: 9.5pt,
+    lang: language,
+    fill: black,
+  )
+  show strong: it => text(weight: 400, it.body)
+  set list(
+    marker: text(fill: black, fa-angle-right),
+    indent: 0.8em,
+    body-indent: 0.5em,
+    spacing: 0.85em,
+  )
+  set par(leading: 0.95em, justify: false, spacing: 0.65em)
+
+  grid(
+    columns: (sidebar-width, 1fr),
+    column-gutter: 0pt,
+    align: (left + top, left + top),
+    grid.cell(stroke: (right: 0.4pt + black), inset: (right: 1.2em), sidebar),
+    grid.cell(inset: (left: 1.2em), body),
+  )
 }
