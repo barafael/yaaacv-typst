@@ -15,7 +15,7 @@
 //
 // Basic usage:
 //
-//   #import "@preview/yaaacv:0.1.0": *
+//   #import "@preview/yaaacv:0.1.1": *
 //   #show: cv.with(language: "en")
 //   #cvheader((firstname: [Jane], lastname: [Doe], /* ... */))
 //   #section-title[Experience][#fa-suitcase]
@@ -86,12 +86,20 @@
 /// Renders an icon in the template's symbol color.
 #let fa-icon(sym) = text(baseline: 0.2pt, fill: symbol-color, sym)
 
+/// Renders an icon centered in a fixed-width box, so icons stacked in a
+/// column line up regardless of each glyph's advance width.
+#let fa-icon-cell(sym) = box(width: 1.2em, align(center, fa-icon(sym)))
+
 // ---------------------------------------------------------------------------
 // Layout constants (LaTeX: leftcolumn=2.5cm, rightcolumnlength=14.8cm)
 // ---------------------------------------------------------------------------
 
 /// Width of the date/name column (`m{2.5cm}` in the class).
-#let left-column = 2.5cm
+#let left-column = 1.8cm
+
+/// Width of the date column in `experience` entries; narrower than
+/// `left-column` so the entry bodies get more room.
+#let experience-column = 1.6cm
 
 /// Diameter of the circular profile photo (`\photo{2.5cm}{...}`).
 #let photo-diameter = 2.5cm
@@ -203,27 +211,27 @@
       #fa-icon(icon)
       #lnk
     ])
-    cells.push(fa-icon(first-icon))
+    cells.push(fa-icon-cell(first-icon))
     cells.push(
       if rest.len() > 0 { [#first-link#sep#rest.join(sep)] } else { first-link },
     )
   }
   if author.phone != none {
-    cells.push(fa-icon(fa-mobile))
+    cells.push(fa-icon-cell(fa-mobile))
     cells.push(author.phone)
   }
   if author.email != none {
-    cells.push(fa-icon(fa-at))
+    cells.push(fa-icon-cell(fa-at))
     // LaTeX colors the email symbolcolor, not linkcolor.
     cells.push(link("mailto:" + author.email,
       text(fill: symbol-color, author.email)))
   }
   if author.address != none {
-    cells.push(fa-icon(fa-map-marker))
+    cells.push(fa-icon-cell(fa-map-marker))
     cells.push(author.address)
   }
   if author.info != none {
-    cells.push(fa-icon(fa-info))
+    cells.push(fa-icon-cell(fa-info))
     cells.push(author.info)
   }
 
@@ -403,24 +411,26 @@
       // LaTeX: leftcolumn=2.5cm is the *content* width; tabcolsep (6pt) is
       // added on each side OUTSIDE it.  Typst insets eat INTO the column
       // width, so we widen by 2×6pt to keep the vline at the correct position.
-      columns: (left-column + 12pt, 1fr),
+      columns: (experience-column + 6pt, 1fr),
       column-gutter: 0pt,
       row-gutter: 0pt,
       stroke: none,
       align: (right + top, left + top),
-      inset: (x: 6pt, y: 6.5pt),
+      inset: (x: 3pt, y: 4pt),
       table.cell(stroke: (right: vstroke))[#strong(end-date)],
       strong(title-line),
       table.cell(stroke: (right: vstroke))[#if start-date != none { strong(start-date) } else { [] }],
       {
         set par(spacing: 0pt)
+        // Bullet lists in experience bodies sit at half the global indent.
+        set list(indent: 0.5em, body-indent: 0.25em)
         body
       },
       table.cell(stroke: (right: vstroke))[],
       tag-row(tags),
     )
   ]
-  v(0.9em)
+  v(0.4em)
 }
 
 /// Small vertical space between consecutive experience entries.
@@ -432,21 +442,27 @@
 // ---------------------------------------------------------------------------
 
 /// One education entry (bold date in the left column, content to the right).
-#let scholarship-entry(date, content) = {
-  grid(
-    columns: (left-column, 1fr),
-    column-gutter: 1em,
-    align: (right + top, left + top),
-    text(weight: 400, date),
-    content,
-  )
-  v(0.4em)
-}
+/// Returns a (date, content) pair for `scholarship`.
+#let scholarship-entry(date, content) = (text(weight: 400, date), content)
 
 /// A list of `scholarship-entry` rows, e.g. under an "Education" heading.
-#let scholarship(..entries) = block(below: 0.5em)[
-  #grid(columns: 1, row-gutter: 0.2em, ..entries)
-]
+/// All rows live in one grid so the distance between entries is uniform
+/// and larger than the line pitch within an entry.
+#let scholarship(..entries) = {
+  set par(leading: body-leading)
+  let cells = ()
+  for e in entries.pos() {
+    cells.push(e.at(0))
+    cells.push(e.at(1))
+  }
+  block(below: 0.5em, grid(
+    columns: (left-column, 1fr),
+    column-gutter: 1em,
+    row-gutter: 1.3em,
+    align: (right + top, left + top),
+    ..cells,
+  ))
+}
 
 // ---------------------------------------------------------------------------
 // Project entry.

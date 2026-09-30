@@ -18,7 +18,7 @@ typst init @preview/yaaacv
 or import it directly in an existing document:
 
 ```typst
-#import "@preview/yaaacv:0.1.0": *
+#import "@preview/yaaacv:0.1.1": *
 ```
 
 ## Requirements
@@ -32,7 +32,7 @@ The template uses system fonts; install them before compiling:
 ## Usage
 
 ```typst
-#import "@preview/yaaacv:0.1.0": *
+#import "@preview/yaaacv:0.1.1": *
 
 #show: cv.with(language: "en")
 
