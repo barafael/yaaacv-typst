@@ -1,7 +1,7 @@
 // Example CV using the yaaacv package.
-// After installing the package, compile with:  typst compile main.typ
+// Compile from the repository root:  typst compile --root . template/main.typ
 
-#import "@preview/yaaacv:0.1.1": *
+#import "../lib.typ": *
 
 #show: cv.with(language: "en")
 

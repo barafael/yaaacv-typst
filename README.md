@@ -80,6 +80,21 @@ The template uses system fonts; install them before compiling:
 
 See the doc comments in [`lib.typ`](lib.typ) for every parameter.
 
+## Development
+
+The example in [`template/main.typ`](template/main.typ) imports the package
+by relative path (`../lib.typ`), so it always builds against the working
+tree:
+
+```sh
+typst compile --root . template/main.typ
+```
+
+**Before submitting to Typst Universe**, switch that import back to
+`@preview/yaaacv:<version>`: `typst init` copies only `template/` into the
+new project, so the relative import would not resolve there, and Universe
+requires templates to import their package by its full spec.
+
 ## License
 
 Dual-licensed under your choice of [MIT](LICENSE) or
