@@ -2,29 +2,16 @@
 // yaaacv — Yet Another Also Awesome CV
 //
 // A Typst port of the `yaac-another-awesome-cv` LaTeX class
-// (c) Christophe Roger, LPPL 1.3c.  All spacing values are derived from the
-// LaTeX class definitions:
-//   \baselinestretch = 1.5   \parskip = 1em   font = 10pt (article default)
-//   baselineskip(10pt) = 12pt → effective line pitch = 12 × 1.5 = 18pt
-//
-// Typst line pitch = 6.6pt (font line box at 10pt) + leading; for an 18pt
-// pitch: leading = 18 − 6.6 = 11.4pt = 1.14em.
+// (c) Christophe Roger, LPPL 1.3c.  Spacing started out from the class
+// definitions and has since been tuned; the code is authoritative.
 //
 // Requires the system fonts "Source Sans Pro" (Light/Regular) and
 // "Font Awesome 6 Free" (Solid + Regular) / "Font Awesome 6 Brands".
-//
-// Basic usage:
-//
-//   #import "@preview/yaaacv:0.1.1": *
-//   #show: cv.with(language: "en")
-//   #cvheader((firstname: [Jane], lastname: [Doe], /* ... */))
-//   #section-title[Experience][#fa-suitcase]
-//   #experience([May 2024], [Job at Company], none, [City], none,
-//     [What you did], ("tag", "tag"))
+// See README.md and template/main.typ for usage.
 // ============================================================================
 
 // ---------------------------------------------------------------------------
-// Colors  (LaTeX: basecolor=0000aa, accentcolor=linkcolor!90, etc.)
+// Colors, named after the class's color macros.
 // ---------------------------------------------------------------------------
 
 /// The base accent color of the template (YAAC blue).
@@ -91,23 +78,24 @@
 #let fa-icon-cell(sym) = box(width: 1.2em, align(center, fa-icon(sym)))
 
 // ---------------------------------------------------------------------------
-// Layout constants (LaTeX: leftcolumn=2.5cm, rightcolumnlength=14.8cm)
+// Layout constants
 // ---------------------------------------------------------------------------
 
-/// Width of the date/name column (`m{2.5cm}` in the class).
+/// Width of the date/name column in education and skill entries.
 #let left-column = 1.8cm
 
 /// Width of the date column in `experience` entries; narrower than
 /// `left-column` so the entry bodies get more room.
 #let experience-column = 1.6cm
 
-/// Diameter of the circular profile photo (`\photo{2.5cm}{...}`).
+/// Diameter of the circular profile photo.
 #let photo-diameter = 2.5cm
 
-/// Body line pitch (18pt at 10pt text, from `\baselinestretch 1.5`).
+/// Body leading.  Reproduces the class's 18pt line pitch (`\baselinestretch
+/// 1.5` at 10pt): Typst's pitch is the 6.6pt line box plus leading.
 #let body-leading = 1.14em
 
-/// Project body pitch (`\linespread{1.25}` tightens 18pt to 15pt).
+/// Project body leading (`\linespread{1.25}`, a 15pt pitch).
 #let project-body-leading = 0.84em
 
 // ---------------------------------------------------------------------------
@@ -134,7 +122,7 @@
   body,
 )
 
-/// A row of tag chips at 8pt.  Accepts an array of strings or content.
+/// A row of small tag chips.  Accepts an array of strings or content.
 #let tag-row(tags) = {
   set text(size: 8pt)
   if type(tags) == array { tags.map(cvtag).join(h(0.5em)) } else { tags }
@@ -153,9 +141,8 @@
 
 // ---------------------------------------------------------------------------
 // CV header (alternative layout).
-// LaTeX \makecvheader: \LARGE first name + small-caps bold last name (17.28pt),
-// \large bold tagline (12pt), \small social table (9pt); photo in the right
-// minipage, vertically centered.
+// LaTeX \makecvheader: name, tagline and social table on the left, photo on
+// the right, vertically centered.
 // ---------------------------------------------------------------------------
 
 /// The CV header: name, tagline, contact/social rows, circular photo.
@@ -168,7 +155,7 @@
 /// #example ```typst
 /// #yaaacv.cvheader((
 ///   firstname: [Jane], lastname: [Doe],
-///   tagline: [Professional Title], photo: "photo.jpg",
+///   tagline: [Professional Title], photo: image("photo.jpg"),
 ///   github: "janedoe", email: "jane@example.com",
 /// ))
 /// ```
@@ -235,8 +222,7 @@
     cells.push(author.info)
   }
 
-  // LaTeX: two minipages — text (linewidth − photo − 2em) and photo (2.5cm),
-  // vertically centered relative to each other.
+  // LaTeX: text and photo minipages, vertically centered against each other.
   grid(
     columns: (1fr, photo-diameter),
     column-gutter: 2em,
@@ -244,19 +230,19 @@
     grid(
       columns: 1fr,
       row-gutter: (0pt, 0pt, 0pt),
-      // Name: \LARGE = 17.28pt, accent color, lastname small-caps + bold.
+      // Name: \LARGE, last name in small caps + bold.
       text(
         size: 17.28pt, fill: accent-color, weight: 300,
         [#author.firstname #smallcaps[#text(weight: 400, author.lastname)]]
       ),
-      // Tagline: \large = 12pt, bold (Regular 400), accent color.
+      // Tagline: \large, bold.
       {
         set par(leading: 8.58pt)
         pad(top: 25pt)[
           #text(size: 12pt, weight: 400, fill: accent-color, author.tagline)
         ]
       },
-      // Social table: \small = 9pt.
+      // Social table: \small.
       {
         pad(top: 41pt)[
           #text(size: 9pt, grid(
@@ -275,8 +261,7 @@
 
 // ---------------------------------------------------------------------------
 // Section title: icon + small-caps title + rule.
-// LaTeX: \titleformat{\section}{\Large\raggedright}{}{0em}{}[\titlerule],
-// \Large = 14.4pt, titlerule = 0.4pt black, full width.
+// LaTeX: \titleformat{\section}{\Large\raggedright}{}{0em}{}[\titlerule].
 // ---------------------------------------------------------------------------
 
 /// A section heading: icon, small-caps title, horizontal rule.
@@ -301,7 +286,6 @@
 
 // ---------------------------------------------------------------------------
 // Keywords (competences).
-// LaTeX: tabular{r p{11.2cm}}, arraystretch=1.1, default tabcolsep=6pt.
 // ---------------------------------------------------------------------------
 
 /// Creates one label/content pair for `keywords`.
@@ -333,15 +317,13 @@
 }
 
 // ---------------------------------------------------------------------------
-// Skills with 6-level dots.
-// LaTeX: longtable{R{2.5cm} R{2.5cm} p{10.5cm}} with \faCircle/\faCircleThin
-// at accentcolor!80; separator \enspace (≈0.5em).
+// Skills with 6-level dots (LaTeX: \faCircle/\faCircleThin in a longtable).
 // ---------------------------------------------------------------------------
 
 /// One skill row: a name and 1–6 filled dots out of 6 (empty = thin ring).
-/// The name sits on its own line; the dot row starts at 2×left-column +
-/// 3×tabcolsep ≈ 5.8cm and, like the class's longtable, overflows a
-/// half-width column.
+/// The name sits on its own line; the dot row is indented by about two
+/// left columns and, like the class's longtable, may overflow a half-width
+/// column.
 #let skill(name, level) = {
   let dots = for i in range(1, 7) {
     if i > level {
@@ -364,7 +346,7 @@
   )
 }
 
-/// A list of `skill` rows with the class's row rhythm (≈10.7mm pitch).
+/// A list of `skill` rows.
 ///
 /// #example ```typst
 /// #yaaacv.skills(
@@ -378,8 +360,7 @@
 
 // ---------------------------------------------------------------------------
 // Experience entry: date column | vertical rule | content.
-// LaTeX: longtable{R{2.5cm}|E}; R right-aligned m-column, E ragged-right
-// p{14.8cm}, \arrayrulewidth 0.4pt vertical rule, tabcolsep 6pt.
+// LaTeX: longtable{R|E} — right-aligned dates, ragged-right body.
 // ---------------------------------------------------------------------------
 
 /// One experience entry.
@@ -406,23 +387,23 @@
   let loc-part = if location == none { [] } else { [, #location] }
   let title-line = [#title-text#org-part#loc-part]
   let vstroke = 0.4pt + black
+  let inset-x = 3pt
   block(breakable: false)[
     #table(
-      // LaTeX: leftcolumn=2.5cm is the *content* width; tabcolsep (6pt) is
-      // added on each side OUTSIDE it.  Typst insets eat INTO the column
-      // width, so we widen by 2×6pt to keep the vline at the correct position.
-      columns: (experience-column + 6pt, 1fr),
+      // Insets eat into the column width; widen by both insets so the dates
+      // get the full `experience-column`.
+      columns: (experience-column + 2 * inset-x, 1fr),
       column-gutter: 0pt,
       row-gutter: 0pt,
       stroke: none,
       align: (right + top, left + top),
-      inset: (x: 3pt, y: 4pt),
+      inset: (x: inset-x, y: 4pt),
       table.cell(stroke: (right: vstroke))[#strong(end-date)],
       strong(title-line),
       table.cell(stroke: (right: vstroke))[#if start-date != none { strong(start-date) } else { [] }],
       {
         set par(spacing: 0pt)
-        // Bullet lists in experience bodies sit at half the global indent.
+        // Tighter bullets than the document default, to save width.
         set list(indent: 0.5em, body-indent: 0.25em)
         body
       },
@@ -438,7 +419,6 @@
 
 // ---------------------------------------------------------------------------
 // Scholarship (education): right-aligned date | content, no vertical rule.
-// LaTeX: tabular{Y p{14.8cm}}, Y = >{\raggedleft}p{2.5cm}.
 // ---------------------------------------------------------------------------
 
 /// One education entry (bold date in the left column, content to the right).
@@ -466,9 +446,8 @@
 
 // ---------------------------------------------------------------------------
 // Project entry.
-// LaTeX: minipage[t]{linewidth − 1.5em}; small-caps bold name with dates
-// flush right, links row, \linespread{1.25} body, footnotesize tags;
-// ≈22pt between projects.
+// LaTeX: minipage with small-caps bold name and dates flush right, links
+// row, \linespread{1.25} body, tags.
 // ---------------------------------------------------------------------------
 
 /// One project entry.
@@ -510,7 +489,7 @@
 
 // ---------------------------------------------------------------------------
 // Two-column section.
-// LaTeX: two minipages each (linewidth/2 − 3em), \hfill between → 6em gap.
+// LaTeX: two minipages separated by \hfill.
 // ---------------------------------------------------------------------------
 
 /// Places two content blocks side by side (e.g. Languages | Interests).
@@ -552,7 +531,7 @@
   // Bold (strong) maps to Regular (400) as in the LaTeX class.
   show strong: it => text(weight: 400, it.body)
 
-  // LaTeX itemize: label=\faAngleRight, nosep, leftmargin=2em.
+  // LaTeX itemize with \faAngleRight labels.
   set list(
     marker: text(fill: black, fa-angle-right),
     indent: 1em,
@@ -560,7 +539,7 @@
     spacing: body-leading,
   )
 
-  // LaTeX: \parskip = 1em, \baselinestretch = 1.5 → 18pt pitch.
+  // LaTeX: \parskip and \baselinestretch (see `body-leading`).
   set par(leading: body-leading, justify: false, spacing: 1em)
 
   body

@@ -40,7 +40,7 @@ The template uses system fonts; install them before compiling:
   firstname: [Jane],
   lastname: [Doe],
   tagline: [Professional Title],
-  photo: "photo.jpg",   // cropped to a 2.5 cm circle
+  photo: image("photo.jpg"),  // cropped to a circle
   github: "janedoe",    // linkedin, github-pages, phone, email,
   email: "jane@example.com",  // address, info likewise; none to omit
 ))
